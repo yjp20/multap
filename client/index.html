@@ -1,12 +1,28 @@
 <!doctype html>
-
 <html lang="en">
 	<head>
-		<title> </title>
+		<title> {{name}} </title>
 		<meta charset="utf-8">
+		{{#each clientCSS}}
+			<link rel="stylesheet" href="{{@root/base}}css/{{this.name}}">
+		{{/each}}
 	</head>
-
 	<body>
-		<p> Test </p>
+		<script src="https://unpkg.com/preact@10.4.1/dist/preact.umd.js"></script>
+		<script src="https://unpkg.com/preact@10.4.1/devtools/dist/devtools.umd.js"></script>
+		<script src="https://unpkg.com/preact@10.4.1/debug/dist/debug.umd.js"></script>
+		<script src="https://unpkg.com/preact-router/dist/preact-router.js"></script>
+		<script src="https://unpkg.com/htm/dist/htm.js"></script>
+		<script>
+			const { Component, h, render } = window.preact
+			const { Router, route } = window.preactRouter
+			const html = htm.bind(h)
+		</script>
+		{{#each clientJS}}
+			<script src="{{@root/base}}js/{{this.name}}"></script>
+		{{/each}}
+		<script>
+			render(html`<${Client} />`, document.body)
+		</script>
 	</body>
 </html>

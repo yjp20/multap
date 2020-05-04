@@ -1,0 +1,18 @@
+@import "briefcss/init.scss";
+
+$breakpoints:   (
+	"tablet":     700px,
+	"desktop":    960px+(2*$gap)
+);
+
+$border: #ccc;
+
+@import "briefcss/main.scss";
+
+.card .card-header {
+	background-color: map-get($colors, 'dark');
+	color: white;
+	padding-top: 0.4rem;
+	padding-bottom: 0.4rem;
+	font-size: 0.8em;
+}
