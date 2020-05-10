@@ -1,28 +1,37 @@
 const homeComponents = []
 const authComponents = []
 
-const token = null
+var token = null
 
-function api(path, data, t) {
-	let token = t || token
+async function api(path, data, t) {
+	t = t || token
 	const res = await fetch(`{{base}}${path}`, {
 		method: "post",
 		headers: {
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			token,
+			token: t,
 			...data,
 		}),
 	})
 	if (!res.ok) {
-		return null, "Network error"
+		return {
+			content: null,
+			error: "Network error",
+		}
 	}
 	const content = await res.json()
 	if (content.error) {
-		return null, content.error
+		return {
+			content: null,
+			error: content.error,
+		}
 	}
-	return content, null
+	return {
+		content: content,
+		error: null,
+	}
 }
 
 class Client extends Component {
@@ -43,15 +52,20 @@ class Wrapper extends Component {
 		`
 	}
 }
-
 class MultapClient extends Component {
 	state = {
 		user: null,
 	}
 
 	onLogin = async t => {
-		api("auth/token", {}, t)
-		this.setState({ user: content.user, })
+		const { content, error } = await api("auth/token", {}, t)
+		if (error) {
+			alert(error)
+			return
+		}
+		console.log(content)
+		token = t
+		this.setState({ user: content.user })
 		route("{{base}}rooms", true)
 	}
 
@@ -147,8 +161,8 @@ class RoomsPage extends Component {
 					<p> {{name}} - Rooms </p>
 				</div>
 				<div class="card-body">
-					<${RoomList}>
-					<//>
+					<${RoomList} />
+					<${RoomsControls} />
 				</div>
 			</div>
 		`
@@ -157,49 +171,106 @@ class RoomsPage extends Component {
 
 class RoomList extends Component {
 	state = {
-		rooms: []
+		rooms: [],
 		isLoaded: false,
 	}
 
-	getRooms = () => {
-		const res = await fetch("{{base}}rooms", {
-			method: "post",
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				token,
-			}),
-		})
-		if (!res.ok) {
+	componentDidMount() {
+		this.getRooms()
+	}
 
+	getRooms = async () => {
+		const { content, error } = await api("rooms/get")
+		if (error) {
+			alert(error)
+			return
 		}
+		this.setState({
+			rooms: content.rooms,
+			isLoaded: true,
+		})
 	}
 
 	render(props, state) {
-		roomItems = []
-		for (room of this.state.rooms) {
+		var roomItems = []
+		for (var room of this.state.rooms) {
 			roomItems.push(html`
-				<RoomItem Name=${room.name} Host=${room.host}}/>
+				<${RoomItem} room=${room}/>
 			`)
 		}
+
 		return html`
 			<div class="roomlist">
-				${roomItems}
+				<div class="columns">
+					<div class="column is-narrow">
+						<button class="button" onClick=${this.getRooms}>↻</button>
+					</div>
+					<div class="column">
+						<input type="text" placeholder="Search..." />
+					</div>
+				</div>
+				<div class="roomlist-container">
+					${roomItems}
+					${!this.state.isLoaded && html` <div class="loader centered"></div> `}
+				</div>
+			</div>
+			`
+	}
+}
+
+class RoomItem extends Component {
+	render(props) {
+		return html`
+			<div class="roomlist-item">
+				<div class="columns">
+					<div class="column is-4 roomlist-name"> ${props.room.name} </div>
+					<div class="column is-4 roomlist-host"> ${props.room.host} </div>
+					<div class="column is-4 roomlist-count has-text-right"> ${props.room.num} / ${props.room.max} </div>
+				</div>
 			</div>
 		`
 	}
 }
 
-class RoomItem extends Component {
-	render() {
+class RoomsControls extends Component {
+	render(props) {
 		return html`
-			
+			<div class="columns">
+				<div class="column is-narrow">
+					<${NewRoomButton} />
+				</div>
+				<div class="column is-narrow">
+					<${FindRoomButton} />
+				</div>
+			</div>
 		`
 	}
-
 }
 
+class NewRoomButton extends Component {
+	onClick = async () => {
+		var { content, error } = await api("rooms/new")
+		if (error) {
+			alert(error)
+			return
+		}
+		console.log(content)
+	}
+
+	render(props) {
+		return html`
+			<button class="button" onClick=${this.onClick}>New Room</button>
+		`
+	}
+}
+
+class FindRoomButton extends Component {
+	render(props) {
+		return html`
+			<button class="button">Find Room</button>
+		`
+	}
+}
 
 class RoomPage extends Component {
 	state = {

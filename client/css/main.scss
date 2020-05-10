@@ -1,5 +1,7 @@
 @import "briefcss/init.scss";
 
+$column-gap: 0.3em;
+
 $breakpoints:   (
 	"tablet":     700px,
 	"desktop":    960px+(2*$gap)
@@ -8,6 +10,34 @@ $breakpoints:   (
 $border: #ccc;
 
 @import "briefcss/main.scss";
+
+.roomlist-container {
+	border-top: 1px;
+	border-bottom: 1px;
+	border-style: solid;
+	border-color: #ccc;
+	margin: -0.5em -1em 1em;
+	max-height: 20.5em;
+	overflow-y: scroll;
+	box-shadow: 0 1.5em 1.5em -1.5em #00000031 inset;
+}
+
+.card {
+	box-shadow: $box-shadow-small;
+}
+
+.roomlist-item {
+	padding: 0.3em 0.5em;
+
+	&:not(:first-child) {
+		border-top: 1px solid #ccc;
+	}
+
+	&:hover {
+		color: map-get($colors, "blue");
+		background-color: #f9f9f9;
+	}
+}
 
 .card .card-header {
 	background-color: map-get($colors, 'dark');

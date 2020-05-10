@@ -12,6 +12,15 @@ function abs(p) {
 	return path.join(__dirname, p)
 }
 
+async function getUser(req) {
+	var token = await req.app.locals.db["UserToken"].findByPk(req.body.token)
+	if (token === null) {
+		return { error: "Token invalid" }
+	}
+	var user = await token.getUser()
+	return { user }
+}
+
 class Server {
 	constructor(options) {
 		this.name = options.name || "Multap"
@@ -84,6 +93,33 @@ class Server {
 	}
 
 	_applyRoutes() {
+		this.router.post("/rooms/new", async (req, res) => {
+			var { user, error } = await getUser(req)
+			if (error) {
+				res.json({ error })
+				return
+			}
+
+			var name = req.body.name || "Random Room"
+			var room = await this.db["Room"].create({
+				name: name,
+				host: user,
+				num: 1,
+				max: 5,
+			})
+
+			res.json({
+				room: room,
+			})
+		})
+
+		this.router.post("/rooms/get", async (req, res) => {
+			var rooms = await this.db["Room"].findAll()
+			res.json({
+				rooms: rooms,
+			})
+		})
+
 		this.router.post("/user/:userid", (req, res) => {
 
 		})
@@ -100,19 +136,12 @@ class Server {
 		})
 
 		this.router.post("/auth/token", async (req, res) => {
-			if (!req.body.token) {
-				res.json({ error: "Token is required" })
+			var { user, error } = await getUser(req)
+			if (error) {
+				res.json({ error })
 				return
 			}
-			var token = await req.app.locals.db["UserToken"].findByPk(req.body.token)
-			if (token === null) {
-				res.json({ error: "Invalid or expired token" })
-				return
-			}
-			res.json({
-				status: "OK",
-				user: await token.getUser(),
-			})
+			res.json({ user })
 		})
 
 		this.router.get("/js/:file", (req, res) => {
@@ -145,6 +174,7 @@ class Server {
 	async _registerModels() {
 		this.db["User"] = models.User(this.sequelize)
 		this.db["UserToken"] = models.UserToken(this.sequelize)
+		this.db["Room"] = models.Room(this.sequelize)
 		for (var key in this.db) {
 			if (this.db[key].associate) {
 				this.db[key].associate(this.db)
@@ -152,6 +182,7 @@ class Server {
 		}
 		await this.sequelize.sync()
 		this.router.locals.db = this.db
+		console.log(this.db)
 	}
 
 	listen(port) {
