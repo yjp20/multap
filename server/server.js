@@ -34,12 +34,15 @@ class Server {
 
 		if (!options.game && !options.games) throw "Cannot be missing game(s) option"
 		if (options.game && options.games) throw "Cannot have both game and games"
-		if (options.game) this.games = [options.game]
+		if (options.game) {
+			this.games = {}
+			this.games[options.game.name] = options.game
+		}
 		if (options.games) this.games = options.games
 
 		this.gameFiles = []
-		for (var game of this.games) {
-			this.gameFiles.push(express.static(game.files))
+		for (var game in this.games) {
+			this.gameFiles.push(express.static(this.games[game].files))
 		}
 
 		this.clientIndex = new File("index.html", abs("../client/index.html"))
@@ -49,6 +52,7 @@ class Server {
 
 		this.db = {}
 		this.rooms = {}
+		this.roomOptions = options.roomOptions
 
 		this.router = express()
 		this.router.use(express.json())
@@ -93,6 +97,12 @@ class Server {
 	}
 
 	_applyRoutes() {
+		this.router.post("/rooms/options", async (req, res) => {
+			res.json({
+				roomOptions: this.roomOptions,
+			})
+		})
+
 		this.router.post("/rooms/new", async (req, res) => {
 			var { user, error } = await getUser(req)
 			if (error) {
@@ -103,9 +113,11 @@ class Server {
 			var name = req.body.name || "Random Room"
 			var room = await this.db["Room"].create({
 				name: name,
-				host: user,
+				hostId: user.id,
 				num: 1,
 				max: 5,
+			}, {
+				include: [ this.db.Room.Host ],
 			})
 
 			res.json({
@@ -114,7 +126,9 @@ class Server {
 		})
 
 		this.router.post("/rooms/get", async (req, res) => {
-			var rooms = await this.db["Room"].findAll()
+			var rooms = await this.db["Room"].findAll({
+				include: [ this.db.Room.Host ],
+			})
 			res.json({
 				rooms: rooms,
 			})

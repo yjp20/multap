@@ -20,7 +20,7 @@ module.exports = (db, extensions) => {
 	})
 
 	User.associate = function (models) {
-		models.User.hasMany(models.UserToken)
+		models.User.Tokens = models.User.hasMany(models.UserToken)
 	}
 
 	return User

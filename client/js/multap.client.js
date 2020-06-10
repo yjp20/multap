@@ -55,6 +55,7 @@ class Wrapper extends Component {
 class MultapClient extends Component {
 	state = {
 		user: null,
+		room: null,
 	}
 
 	onLogin = async t => {
@@ -74,9 +75,17 @@ class MultapClient extends Component {
 		this.setState({ user: null })
 	}
 
-	handleRoute = async e => {
+	onJoinRoom = (room) => {
+		this.setState({ room })
+	}
+
+	onLeaveRoom = (room) => {
+		this.setState({ room: null })
+	}
+
+	handleRoute = (e) => {
 		switch (e.url) {
-			case '/':
+			case '{{base}}':
 				if (this.state.user) route("{{base}}rooms", true)
 				break
 			default:
@@ -90,7 +99,7 @@ class MultapClient extends Component {
 			<div class="container">
 				<${Router} onChange=${this.handleRoute}>
 					<${HomePage} onLogin=${this.onLogin} path="/" />
-					<${RoomsPage} path="/rooms" />
+					<${RoomsPage} onJoinRoom=${this.onJoinRoom} path="/rooms" />
 					<${RoomPage} path="/room/:id" />
 				<//>
 				<${Footer} />
@@ -116,7 +125,7 @@ class HomePage extends Component {
 
 	render(props) {
 		return html`
-			<div class="columns">
+			<div class="columns is-desktop">
 				<div class="column is-8">
 					${this.homeComponents}
 				</div>
@@ -131,14 +140,8 @@ class HomePage extends Component {
 class HomeInfo extends Component {
 	render() {
 		return html`
-			<div class="card">
-				<div class="card-header">
-					<p> {{name}} </p>
-				</div>
-				<div class="card-body">
-					{{{descHTML}}}
-				</div>
-			</div>
+			<p class="title"> {{name}} </p>
+			<p> {{{descHTML}}} </p>
 		`
 	}
 }
@@ -209,9 +212,21 @@ class RoomList extends Component {
 						<input type="text" placeholder="Search..." />
 					</div>
 				</div>
+				<div class="roomlist-container-header">
+					<div class="columns">
+						<div class="column is-4 is-offset-1"> Name </div>
+						<div class="column is-4"> Host </div>
+						<div class="column is-2 has-text-right"> # </div>
+					</div>
+				</div>
 				<div class="roomlist-container">
 					${roomItems}
-					${!this.state.isLoaded && html` <div class="loader centered"></div> `}
+					${this.state.isLoaded && roomItems.length == 0 && html`
+						<div class="roomlist-item roomlist-item_norooms">
+							No rooms
+						</div>
+					`}
+					${!this.state.isLoaded && html`<div class="loader centered"></div> `}
 				</div>
 			</div>
 			`
@@ -220,12 +235,14 @@ class RoomList extends Component {
 
 class RoomItem extends Component {
 	render(props) {
+		console.log(props.room)
 		return html`
 			<div class="roomlist-item">
 				<div class="columns">
+					<div class="column is-1 roomlist-name">  </div>
 					<div class="column is-4 roomlist-name"> ${props.room.name} </div>
-					<div class="column is-4 roomlist-host"> ${props.room.host} </div>
-					<div class="column is-4 roomlist-count has-text-right"> ${props.room.num} / ${props.room.max} </div>
+					<div class="column is-4 roomlist-host"> ${props.room.host.nick} </div>
+					<div class="column is-2 roomlist-count has-text-right"> ${props.room.num} / ${props.room.max} </div>
 				</div>
 			</div>
 		`
@@ -248,8 +265,50 @@ class RoomsControls extends Component {
 }
 
 class NewRoomButton extends Component {
+	state = {
+		open: false,
+	}
+
+	onClick = () => {
+		this.setState({ open: true })
+	}
+
+	onClose = () => {
+		this.setState({ open: false })
+	}
+
+	render(props) {
+		return html`
+			<button class="button" onClick=${this.onClick}>New Room</button>
+			${this.state.open && html`
+				<${Modal} onClose=${this.onClose}>
+					<${NewRoomModal} />
+				<//>
+			`}
+		`
+	}
+}
+
+class NewRoomModal extends Component {
+	state = {
+		isLoaded: false,
+		roomOptions: null,
+	}
+
+	onLoad = async () => {
+		var { roomOptions, error } = await api("rooms/options")
+		if (error) {
+			alert(error)
+			return
+		}
+		this.setState({isLoaded: true, roomOptions})
+	}
+
 	onClick = async () => {
-		var { content, error } = await api("rooms/new")
+		var { content, error } = await api("rooms/new", {
+
+
+		})
 		if (error) {
 			alert(error)
 			return
@@ -258,8 +317,16 @@ class NewRoomButton extends Component {
 	}
 
 	render(props) {
+		var formComponents = []
+
+		this.onLoad()
+
 		return html`
-			<button class="button" onClick=${this.onClick}>New Room</button>
+			${!this.state.isLoaded && html`<div class="loader"></div>`}
+			${this.state.isLoaded && formComponents}
+			<div class="field">
+				<button onClick=${this.onClick}></button>
+			</div>
 		`
 	}
 }
@@ -294,6 +361,37 @@ class RoomPage extends Component {
 					`}
 					${ state.isLoaded }
 				</div>
+			</div>
+		`
+	}
+}
+
+class Modal extends Component {
+	render(props) {
+		return createPortal(html`
+			<div class="modal">
+				<div class="modal-item">
+					<div class="card">
+						<div class="card-body">
+							<button onClick=${props.onClose}> X </button>
+							${props.children}
+						</div>
+					</div>
+				</div>
+			</div>
+		`, document.body)
+	}
+}
+
+class FormComponent extends Component {
+	render(props) {
+		viewname = props.viewname || props.name || "Form Field"
+		name = props.name || "Form Field"
+
+		return html`
+			<div class="field">
+				<label class="label"> ${name} </label>
+				${props.children}
 			</div>
 		`
 	}

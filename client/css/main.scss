@@ -1,5 +1,7 @@
+@import "https://fonts.googleapis.com/css?family=IBM+Plex+Sans:400,700&subset=latin-ext,cyrillic.css";
 @import "briefcss/init.scss";
 
+$family-sans-serif: 'IBM Plex Sans';
 $column-gap: 0.3em;
 
 $breakpoints:   (
@@ -9,32 +11,46 @@ $breakpoints:   (
 
 $border: #ccc;
 
+$card-border: map-get($colors, "dark");
+$card-border-width: 5px;
+$card-border-radius: 0;
+
 @import "briefcss/main.scss";
 
-.roomlist-container {
-	border-top: 1px;
-	border-bottom: 1px;
-	border-style: solid;
-	border-color: #ccc;
-	margin: -0.5em -1em 1em;
-	max-height: 20.5em;
-	overflow-y: scroll;
-	box-shadow: 0 1.5em 1.5em -1.5em #00000031 inset;
+.card {
+	box-shadow: $box-shadow-medium;
 }
 
-.card {
+.roomlist-container-header {
+	padding: 0.6em 0.5em;
+}
+
+.roomlist-container {
+	border-width: 1px;
+	border-style: solid;
+	border-color: #ccc;
+	max-height: 20.5em;
+	overflow-y: auto;
+	margin-bottom: 2em;
 	box-shadow: $box-shadow-small;
 }
 
 .roomlist-item {
 	padding: 0.3em 0.5em;
 
+	&.roomlist-item_norooms {
+		padding: 1em 0.5em;
+		text-align: center;
+		color: map-get($colors, "grey");
+		background-color: map-get($colors, "light");
+	}
+
 	&:not(:first-child) {
 		border-top: 1px solid #ccc;
 	}
 
-	&:hover {
-		color: map-get($colors, "blue");
+	&:not(.roomlist-item_norooms):hover {
+		font-weight: bold;
 		background-color: #f9f9f9;
 	}
 }
@@ -42,7 +58,20 @@ $border: #ccc;
 .card .card-header {
 	background-color: map-get($colors, 'dark');
 	color: white;
-	padding-top: 0.4rem;
-	padding-bottom: 0.4rem;
-	font-size: 0.8em;
+}
+
+.modal {
+	position: fixed;
+	display: flex;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	align-items: center;
+	justify-content: center;
+	background-color: #00000021;
+}
+
+.modal-item {
+	max-width: 400px;
 }

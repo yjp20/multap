@@ -10,14 +10,15 @@
 	<body>
 		<script src="https://unpkg.com/preact@10.4.1/dist/preact.umd.js"></script>
 		<script src="https://unpkg.com/preact@10.4.1/devtools/dist/devtools.umd.js"></script>
+		<script src="https://unpkg.com/preact@10.4.1/hooks/dist/hooks.umd.js"></script>
 		<script src="https://unpkg.com/preact@10.4.1/debug/dist/debug.umd.js"></script>
+		<script src="https://unpkg.com/preact@10.4.1/compat/dist/compat.umd.js"></script>
 		<script src="https://unpkg.com/preact-router@3.2.1/dist/preact-router.js"></script>
-		<script src="https://unpkg.com/preact-portal@1.1.3/dist/preact-portal.js"></script>
 		<script src="https://unpkg.com/htm@3.0.4/dist/htm.js"></script>
 		<script>
 			const { Component, h, render } = window.preact
 			const { Router, route } = window.preactRouter
-			const Portal = window.preactPortal
+			const { createPortal } = window.preactCompat
 			const html = htm.bind(h)
 		</script>
 		{{#each clientJS}}

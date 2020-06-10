@@ -8,6 +8,9 @@ module.exports = (db, extensions) => {
 			unqiue: true,
 			defaultValue: Sequelize.UUIDV4,
 		},
+		gamename: {
+			type: Sequelize.STRING,
+		},
 		name: {
 			type: Sequelize.STRING,
 			allowNull: false,
@@ -24,8 +27,11 @@ module.exports = (db, extensions) => {
 	})
 
 	Room.associate = function (models) {
-		models.Room.hasOne(models.User, {as: 'host'})
-		models.Room.hasMany(models.User, {as: 'users'})
+		models.Room.Host = models.Room.belongsTo(models.User, { as: "host" } )
+		models.Room.Users = models.Room.belongsToMany(models.User, {
+			as: "users",
+			through: "RoomUsers",
+		})
 	}
 
 	return Room
