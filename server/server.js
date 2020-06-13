@@ -135,29 +135,31 @@ class Server {
 
 			var room = await this.db["Room"].create({
 				name: name,
-				hostId: user.id,
 				num: 1,
 				max: 5,
 				status: [ "waiting" ],
 				password: password,
 			}, {
-				include: [ this.db.Room.Host ],
 				attributes: {
-					exclude: ["id", "password"],
+					exclude: ["password"],
 				},
 			})
+
+			await room.addUser(user, { through: { host: true }})
+
 			res.json({
-				room: room,
+				roomId: room,
 			})
 		})
 
 		this.router.post("/rooms/get", async (req, res) => {
 			var rooms = await this.db["Room"].findAll({
-				include: [ this.db.Room.Host ],
+				include: [ this.db.Room.Users ],
 				attributes: {
-					exclude: ["id", "password"],
+					exclude: ["password"],
 				},
 			})
+			
 			res.json({
 				rooms: rooms,
 			})
@@ -170,7 +172,7 @@ class Server {
 				return
 			}
 			var rooms = await this.db["Room"].findAll({
-				include: [ this.db.Room.Host ],
+				include: [ this.db.Room.Users ],
 			})
 			res.json({
 				rooms: rooms,
@@ -178,17 +180,14 @@ class Server {
 		})
 
 		this.router.post("/room/get", async (req, res) => {
-			var rooms = await this.db["Room"].findOne({
+			var room = await this.db["Room"].findOne({
 				where: {
-					uuid: req.body.uuid,
+					id: req.body.id,
 				},
-				include: [ this.db.Room.Host ],
-				attributes: {
-					exclude: ["id"],
-				},
+				include: [ this.db.Room.Users ],
 			})
 			res.json({
-				rooms: rooms,
+				roomPreview: room,
 			})
 		})
 
@@ -248,6 +247,8 @@ class Server {
 		this.db["User"] = models.User(this.sequelize)
 		this.db["UserToken"] = models.UserToken(this.sequelize)
 		this.db["Room"] = models.Room(this.sequelize)
+		this.db["RoomUsers"] = models.RoomUsers(this.sequelize)
+
 		for (var key in this.db) {
 			if (this.db[key].associate) {
 				this.db[key].associate(this.db)

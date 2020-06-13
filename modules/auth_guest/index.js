@@ -1,6 +1,6 @@
 const path = require('path')
 
-const utils = require("../../server/utils.js")
+const utils = require("../../server/utils")
 const File = require("../../server/file").File
 
 module.exports = {
@@ -13,11 +13,9 @@ module.exports = {
 				var nick = req.body.nick || "guest"
 				const user = await req.app.locals.db["User"].create({
 					nick: nick,
-					temp: false,
+					temp: true,
 				})
-				const userToken = await user.createUserToken({
-					token: await utils.generateToken(),
-				})
+				const userToken = await user.createUserToken()
 				res.json({ token: userToken.token })
 			},
 		},

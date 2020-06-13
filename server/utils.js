@@ -1,8 +1,8 @@
 const crypto = require("crypto")
 
-async function generateToken() {
+async function generateToken(len) {
 	return new Promise((resolve, reject) => {
-		crypto.randomBytes(48, function(err, buf) {
+		crypto.randomBytes(len, function(err, buf) {
 			resolve(buf.toString('base64'))
 		})
 	})

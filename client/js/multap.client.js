@@ -7,42 +7,70 @@ var token = null
 function useBool(v) {
 	const [val, setVal] = useState(v)
 
-	const valTrue = useCallback(() => setVal(true), [val])
-	const valFalse = useCallback(() => setVal(false), [val])
+	const valTrue = useCallback(() => !val && setVal(true), [val])
+	const valFalse = useCallback(() => val && setVal(false), [val])
 
 	return [val, valTrue, valFalse]
 }
 
-async function api(path, data, t) {
-	t = t || token
-	const res = await fetch(`{{base}}${path}`, {
-		method: "post",
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({
-			token: t,
-			...data,
-		}),
-	})
-	if (!res.ok) {
-		return {
-			content: null,
-			error: "Network error",
+function useForm() {
+	const [formData, setFormData] = useState({})
+
+	onInput = fieldName => {
+		return e => {
+			var f = {...formData}
+			f[fieldName] = e.target.value
+			setFormData(f)
 		}
 	}
-	const content = await res.json()
-	if (content.error) {
-		return {
-			content: null,
-			error: content.error,
-		}
-	}
-	return {
-		content: content,
-		error: null,
-	}
+
+	return [formData, onInput, setFormData]
 }
+
+function useAPI() {
+	const [isMounted, setIsMounted] = useState(true)
+
+	useEffect(() => {
+		return () => setIsMounted(false)
+	})
+
+	async function api(path, data, t) {
+		t = t || token
+		const res = await fetch(`{{base}}${path}`, {
+			method: "post",
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				token: t,
+				...data,
+			}),
+		})
+		if (!res.ok) {
+			return {
+				content: null,
+				error: "Network error",
+				isMounted,
+			}
+		}
+		const content = await res.json()
+		if (content.error) {
+			return {
+				content: null,
+				error: content.error,
+				isMounted,
+			}
+		}
+		return {
+			content: content,
+			error: null,
+			isMounted,
+		}
+	}
+
+	return api
+}
+
 
 function Client() {
 	return html`
@@ -62,7 +90,8 @@ function Wrapper(props) {
 
 function MultapClient() {
 	const [user, setUser] = useState(null)
-	const [room, setRoom] = useState(null)
+	const [roomId, setRoomId] = useState(null)
+	const api = useAPI()
 
 	const page = pageComponents.map(comp => html`<${comp}/>`)
 
@@ -82,7 +111,7 @@ function MultapClient() {
 		setUser(null)
 	}
 
-	onJoinRoom = (room) => {
+	const onJoinRoom = (room) => {
 		setRoom(room)
 	}
 
@@ -95,8 +124,13 @@ function MultapClient() {
 			case '{{base}}':
 				if (user) route("{{base}}rooms", true)
 				break
-			default:
+			case "{{base}}rooms":
 				if (!user) route("{{base}}", true)
+				if (roomId) route("{{base}}room", true)
+				break
+			case "{{base}}room":
+				if (!user) route("{{base}}", true)
+				if (!roomId) route("{{base}}rooms", true)
 				break
 		}
 	}
@@ -164,6 +198,7 @@ function RoomsPage() {
 function RoomList() {
 	const [rooms, setRooms] = useState([])
 	const [isLoaded, isLoadedTrue, isLoadedFalse] = useBool(false)
+	const api = useAPI()
 
 	getRooms = async () => {
 		const { content, error } = await api("rooms/get")
@@ -176,13 +211,9 @@ function RoomList() {
 		return
 	}
 
-	getRoomsLoop = async () => {
-		await getRooms()
-		return setTimeout(getRoomsLoop, 10000)
-	}
-
-	useEffect(async () => {
-		const timer = await getRoomsLoop()
+	useEffect(() => {
+		getRooms()
+		const timer = setInterval(getRooms, 10000) 
 		return () => clearTimeout(timer)
 	}, [])
 
@@ -233,41 +264,46 @@ function RoomItem(props) {
 
 		${isOpen && html`
 			<${Modal} onClose=${isOpenFalse}>
-				<${JoinRoomModal} roomUuid=${props.room.uuid}/>
+				<${JoinRoomModal} roomId=${props.room.id}/>
 			<//>
 		`}
 	`
 }
 
-function JoinRoomModal({roomUuid}) {
+function JoinRoomModal({roomId}) {
 	const [isLoaded, isLoadedTrue, isLoadedFalse] = useBool(false)
 	const [roomPreview, setRoomPreview] = useState(null)
+	const [formData, onInput] = useForm()
+	const api = useAPI()
 
 	getRoomPreview = async () => {
 		const { content, error } = await api("room/get", {
-			uuid: roomUuid,
+			id: roomId,
 		})
 		if (error) {
-			alert(error, "Retrying in 10 seconds")
+			alert(error)
 			return
 		}
 		setRoomPreview(content.roomPreview)
 		isLoadedTrue()
-		return
+		console.log("hello")
 	}
 
-	getRoomPreviewLoop = async () => {
-		await getRoomPreview()
-		return setTimeout(getRoomPreviewLoop, 10000)
+	onClick = async () => {
+		const { content, error } = await api("room/join", {
+			id: roomId,
+			password: formData.password,
+		})
+		if (error) {
+			alert(error)
+			return
+		}
 	}
 
-	onClick = () => {
-
-	}
-
-	useEffect(async () => {
-		const timer = await getRoomPreviewLoop()
-		return () => clearTimeout(timer)
+	useEffect(() => {
+		getRoomPreview()
+		const timer = setInterval(getRoomPreview, 10000)
+		return () => clearInterval(timer)
 	}, [])
 
 	passwordField = {
@@ -279,7 +315,7 @@ function JoinRoomModal({roomUuid}) {
 	return html`
 		${!isLoaded && html`<div class="field"><div class="loader centered"></div></div>`}
 		${isLoaded && html`
-			${roomPreview.status.includes("locked") && html`<${FormComponent} data=${passwordField}/>`}
+			${roomPreview.status.includes("locked") && html`<${FormComponent} onInput=${onInput("password")} data=${passwordField}/>`}
 		`}
 		<div class="field">
 			<button class="button is-fullwidth" onClick=${onClick}> Join Room </button>
@@ -328,17 +364,20 @@ function NewRoomButton() {
 function NewRoomModal() {
 	const [isLoaded, isLoadedTrue, isLoadedFalse] = useBool(false)
 	const [roomOptions, setRoomOptions] = useState({})
-	const [formData, setFormData] = useState({})
+	const [formData, onInput] = useForm()
+	const api = useAPI()
 
 	onLoad = async () => {
 		if (isLoaded) return
-		var { content, error } = await api("rooms/options")
+		var { content, error, isMounted } = await api("rooms/options")
 		if (error) {
 			alert(error)
 			return
 		}
-		isLoadedTrue()
-		setRoomOptions(content.roomOptions)
+		if (isMounted) {
+			isLoadedTrue()
+			setRoomOptions(content.roomOptions)
+		}
 	}
 
 	onClick = async () => {
@@ -348,14 +387,6 @@ function NewRoomModal() {
 			return
 		}
 		console.log(content)
-	}
-
-	onInput = fieldName => {
-		return e => {
-			var formData = {...formData}
-			formData[fieldName] = e.target.value
-			setFormData(formData)
-		}
 	}
 
 	useEffect(onLoad, [])
@@ -434,6 +465,7 @@ function FormComponent(props) {
 
 	var comps = {
 		"text": html`<input type="text" class="input" maxlength=${max} onInput=${props.onInput} placeholder=${placeholder}/>`,
+		"password": html`<input type="password" class="input" maxlength=${max} onInput=${props.onInput} placeholder=${placeholder}/>`,
 	}
 
 	var sub = comps[type]
