@@ -67,7 +67,7 @@ class Server {
 					"viewname": "Password",
 					"name": "password",
 					"type": "text",
-					"placeholder": "Random Room",
+					"placeholder": "Leave empty for no password",
 					"max": 32,
 				},
 				...this.roomOptions,
@@ -142,8 +142,10 @@ class Server {
 				password: password,
 			}, {
 				include: [ this.db.Room.Host ],
+				attributes: {
+					exclude: ["id", "password"],
+				},
 			})
-
 			res.json({
 				room: room,
 			})
@@ -152,6 +154,9 @@ class Server {
 		this.router.post("/rooms/get", async (req, res) => {
 			var rooms = await this.db["Room"].findAll({
 				include: [ this.db.Room.Host ],
+				attributes: {
+					exclude: ["id", "password"],
+				},
 			})
 			res.json({
 				rooms: rooms,
@@ -166,6 +171,21 @@ class Server {
 			}
 			var rooms = await this.db["Room"].findAll({
 				include: [ this.db.Room.Host ],
+			})
+			res.json({
+				rooms: rooms,
+			})
+		})
+
+		this.router.post("/room/get", async (req, res) => {
+			var rooms = await this.db["Room"].findOne({
+				where: {
+					uuid: req.body.uuid,
+				},
+				include: [ this.db.Room.Host ],
+				attributes: {
+					exclude: ["id"],
+				},
 			})
 			res.json({
 				rooms: rooms,

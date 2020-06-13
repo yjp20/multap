@@ -17,6 +17,7 @@
 		<script src="https://unpkg.com/htm@3.0.4/dist/htm.js"></script>
 		<script>
 			const { Component, h, render } = window.preact
+			const { useState, useContext, useCallback, useEffect } = window.preactHooks
 			const { Router, route } = window.preactRouter
 			const { createPortal } = window.preactCompat
 			const html = htm.bind(h)

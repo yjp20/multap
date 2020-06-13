@@ -48,6 +48,7 @@ class AuthGuest extends Component {
 	}
 
 	render(props) {
+		console.log("GUEST")
 		return html`
 			<div class="card">
 				<div class="card-header">
