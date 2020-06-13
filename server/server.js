@@ -52,7 +52,27 @@ class Server {
 
 		this.db = {}
 		this.rooms = {}
-		this.roomOptions = options.roomOptions
+
+		this.roomOptions = options.roomOptions || []
+		if (!this.noDefaultRoomOptions) {
+			this.roomOptions = [
+				{
+					"viewname": "Room Name",
+					"name": "name",
+					"type": "text",
+					"placeholder": "Random Room",
+					"max": 20,
+				},
+				{
+					"viewname": "Password",
+					"name": "password",
+					"type": "text",
+					"placeholder": "Random Room",
+					"max": 32,
+				},
+				...this.roomOptions,
+			]
+		}
 
 		this.router = express()
 		this.router.use(express.json())
@@ -111,11 +131,15 @@ class Server {
 			}
 
 			var name = req.body.name || "Random Room"
+			var password = req.body.password || ""
+
 			var room = await this.db["Room"].create({
 				name: name,
 				hostId: user.id,
 				num: 1,
 				max: 5,
+				status: [ "waiting" ],
+				password: password,
 			}, {
 				include: [ this.db.Room.Host ],
 			})
@@ -134,11 +158,26 @@ class Server {
 			})
 		})
 
+		this.router.post("/rooms/join", async (req, res) => {
+			var { user, error } = await getUser(req)
+			if (error) {
+				alert(error)
+				return
+			}
+			var rooms = await this.db["Room"].findAll({
+				include: [ this.db.Room.Host ],
+			})
+			res.json({
+				rooms: rooms,
+			})
+		})
+
 		this.router.post("/user/:userid", (req, res) => {
 
 		})
 
-		this.router.post("/join/:roomToken", (req, res) => {
+		this.router.post("/join/:roomToken", async (req, res) => {
+			var { user, error } = await getUser(req)
 
 		})
 

@@ -56,8 +56,10 @@ class AuthGuest extends Component {
 				<div class="card-body">
 					<form onSubmit=${this.onSubmit}>
 						<div class="field">
-							<input type="text" placeholder="Nickname" onInput=${this.onInput}/>
-							<button class="button is-dark"> Guest </button>
+							<div class="control">
+								<input type="text" placeholder="Nickname" onInput=${this.onInput}/>
+								<button class="button is-dark"> Guest </button>
+							</div>
 						</div>
 						${ this.state.loading && html`
 							<div class="loader centered"></div>

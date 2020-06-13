@@ -3,3 +3,4 @@ package-lock.json
 client/css/multap.css
 client/css/multap.css.map
 *.swp
+*.swo

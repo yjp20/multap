@@ -21,6 +21,10 @@ $card-border-radius: 0;
 	box-shadow: $box-shadow-medium;
 }
 
+.homeinfo {
+	margin-bottom: 3em;
+}
+
 .roomlist-container-header {
 	padding: 0.6em 0.5em;
 }
@@ -53,6 +57,26 @@ $card-border-radius: 0;
 		font-weight: bold;
 		background-color: #f9f9f9;
 	}
+
+}
+
+.roomlist-indicator {
+	display: inline-block;
+	margin: auto 0.2em;
+
+	&.roomlist-indicator-playing {
+		width: 0.6em;
+		height: 0.6em;
+		border-radius: 50%;
+		background-color: map-get($colors, "green");
+	}
+
+	&.roomlist-indicator-waiting {
+		width: 0.6em;
+		height: 0.6em;
+		border-radius: 50%;
+		background-color: map-get($colors, "grey");
+	}
 }
 
 .card .card-header {
@@ -73,5 +97,6 @@ $card-border-radius: 0;
 }
 
 .modal-item {
+	width: 100%;
 	max-width: 400px;
 }

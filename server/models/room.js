@@ -23,6 +23,21 @@ module.exports = (db, extensions) => {
 			type: Sequelize.INTEGER,
 			allowNull: false,
 		},
+		password: {
+			type: Sequelize.STRING,
+		},
+		status: {
+			type: Sequelize.STRING,
+			get() {
+				var arr = this.getDataValue('status').split(' ')
+				if (this.getDataValue('password'))
+					arr.push('locked')
+				return arr
+			},
+			set(val) {
+				this.setDataValue('status', val.join(' '))
+			},
+		},
 		...extensions,
 	})
 

@@ -52,6 +52,7 @@ class Wrapper extends Component {
 		`
 	}
 }
+
 class MultapClient extends Component {
 	state = {
 		user: null,
@@ -126,10 +127,10 @@ class HomePage extends Component {
 	render(props) {
 		return html`
 			<div class="columns is-desktop">
-				<div class="column is-8">
+				<div class="column is-8-desktop">
 					${this.homeComponents}
 				</div>
-				<div class="column is-4">
+				<div class="column is-4-desktop">
 					${this.authComponents}
 				</div>
 			</div>
@@ -140,8 +141,10 @@ class HomePage extends Component {
 class HomeInfo extends Component {
 	render() {
 		return html`
-			<p class="title"> {{name}} </p>
-			<p> {{{descHTML}}} </p>
+			<div class="homeinfo">
+				<p class="homeinfo-title title"> {{name}} </p>
+				<p> {{{descHTML}}} </p>
+			</div>
 		`
 	}
 }
@@ -234,18 +237,37 @@ class RoomList extends Component {
 }
 
 class RoomItem extends Component {
+	onClick = () => {
+		var id = this.props.room.id
+		console.log(id)
+	}
+
 	render(props) {
 		console.log(props.room)
 		return html`
-			<div class="roomlist-item">
+			<div class="roomlist-item" onClick=${this.onClick}>
 				<div class="columns">
-					<div class="column is-1 roomlist-name">  </div>
+					<div class="column is-1 roomlist-indicators"><${RoomStatusIndicator} status=${props.room.status}/></div>
 					<div class="column is-4 roomlist-name"> ${props.room.name} </div>
 					<div class="column is-4 roomlist-host"> ${props.room.host.nick} </div>
 					<div class="column is-2 roomlist-count has-text-right"> ${props.room.num} / ${props.room.max} </div>
 				</div>
 			</div>
 		`
+	}
+}
+
+class RoomStatusIndicator extends Component {
+	render(props) {
+		var status = props.status
+		var indicators = {
+			"waiting": html`<span class="roomlist-indicator roomlist-indicator-waiting"></span>`,
+			"playing": html`<span class="roomlist-indicator roomlist-indicator-playing"></span>`,
+			"locked": html`<span class="roomlist-indicator">🔒</span>`,
+		}
+		var components = []
+		status.forEach(e => components.push(indicators[e]))
+		return components
 	}
 }
 
@@ -293,22 +315,21 @@ class NewRoomModal extends Component {
 	state = {
 		isLoaded: false,
 		roomOptions: null,
+		formData: {},
 	}
 
 	onLoad = async () => {
-		var { roomOptions, error } = await api("rooms/options")
+		if (this.state.isLoaded) return
+		var { content, error } = await api("rooms/options")
 		if (error) {
 			alert(error)
 			return
 		}
-		this.setState({isLoaded: true, roomOptions})
+		this.setState({isLoaded: true, roomOptions: content.roomOptions})
 	}
 
 	onClick = async () => {
-		var { content, error } = await api("rooms/new", {
-
-
-		})
+		var { content, error } = await api("rooms/new", this.state.formData)
 		if (error) {
 			alert(error)
 			return
@@ -316,16 +337,31 @@ class NewRoomModal extends Component {
 		console.log(content)
 	}
 
+	onInput = fieldName => {
+		return e => {
+			var formData = {...this.state.formData}
+			formData[fieldName] = e.target.value
+			this.setState({ formData })
+		}
+	}
+
 	render(props) {
 		var formComponents = []
 
-		this.onLoad()
+		if (this.state.isLoaded) {
+			this.state.roomOptions.forEach((e) => {
+				formComponents.push(html`<${FormComponent} data=${e} onInput=${this.onInput(e.name)}/>`)
+			})
+		}
+		else {
+			this.onLoad()
+		}
 
 		return html`
-			${!this.state.isLoaded && html`<div class="loader"></div>`}
+			${!this.state.isLoaded && html`<div class="field"><div class="loader centered"></div></div>`}
 			${this.state.isLoaded && formComponents}
 			<div class="field">
-				<button onClick=${this.onClick}></button>
+				<button class="button is-fullwidth" onClick=${this.onClick}> New Room </button>
 			</div>
 		`
 	}
@@ -366,14 +402,18 @@ class RoomPage extends Component {
 	}
 }
 
+// etc.
+
 class Modal extends Component {
 	render(props) {
 		return createPortal(html`
 			<div class="modal">
 				<div class="modal-item">
 					<div class="card">
+						<div class="card-header">
+							<button class="button is-red" onClick=${props.onClose}> X </button>
+						</div>
 						<div class="card-body">
-							<button onClick=${props.onClose}> X </button>
 							${props.children}
 						</div>
 					</div>
@@ -385,13 +425,25 @@ class Modal extends Component {
 
 class FormComponent extends Component {
 	render(props) {
-		viewname = props.viewname || props.name || "Form Field"
-		name = props.name || "Form Field"
+		var d = props.data
+
+		var viewname = d.viewname || d.name || "Form Field"
+		var name = d.name || "Form Field"
+		var placeholder = d.placeholder || d.name || ""
+		var type = d.type
+		var max = d.max
+		var hasLabel = d.hasLabel === undefined ? true : d.hasLabel
+
+		var comps = {
+			"text": html`<input type="text" class="input" maxlength=${max} onInput=${props.onInput} placeholder=${placeholder}/>`,
+		}
+
+		var sub = comps[type]
 
 		return html`
 			<div class="field">
-				<label class="label"> ${name} </label>
-				${props.children}
+				${hasLabel && html`<label class="label"> ${viewname} </label>`}
+				${sub}
 			</div>
 		`
 	}
